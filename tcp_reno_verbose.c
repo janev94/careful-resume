@@ -25,6 +25,26 @@ void clamp_init(struct sock *sk)
 }
 
 
+void vreno_set_state(struct sock *sk, u8 new_state)
+{
+	printk(KERN_INFO "Entering new state: %u", new_state);
+
+}
+
+
+void vreno_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
+{
+
+	printk(KERN_INFO "Congestion window event occurred: %u", ev);
+}
+
+u32 vreno_undo_cwnd(struct sock *sk) 
+{
+	u32 new_cwnd = tcp_reno_undo_cwnd(sk);
+	printk(KERN_INFO "Loss occurred, new CWND value is: %u", new_cwnd);
+	return new_cwnd;
+}
+
 struct tcp_congestion_ops tcp_reno_verbose = {
 	.init		= clamp_init,
 	.flags		= TCP_CONG_NON_RESTRICTED,
@@ -32,21 +52,23 @@ struct tcp_congestion_ops tcp_reno_verbose = {
 	.owner		= THIS_MODULE,
 	.ssthresh	= tcp_reno_ssthresh,
 	.cong_avoid	= tcp_reno_cong_avoid,
-	.undo_cwnd	= tcp_reno_undo_cwnd,
+	.set_state  = vreno_set_state,
+	.cwnd_event = vreno_cwnd_event,
+	.undo_cwnd	= vreno_undo_cwnd,
 	.in_ack_event = tcp_vreno_in_ack_event,
 };
 
 
 static int __init tcp_reno_verbose_register(void)
 {
-    printk(KERN_INFO "Verbose Reno Going Up4");
+    printk(KERN_INFO "Verbose Reno Going Up5");
 	return tcp_register_congestion_control(&tcp_reno_verbose);
 }
 
 
 static void __exit tcp_reno_verbose_unregister(void)
 {
-    printk(KERN_INFO "Verbose Reno Shutting Down4");
+    printk(KERN_INFO "Verbose Reno Shutting Down5");
     tcp_unregister_congestion_control(&tcp_reno_verbose);
 }
 
