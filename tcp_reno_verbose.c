@@ -36,6 +36,15 @@ void vreno_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
 {
 
 	printk(KERN_INFO "Congestion window event occurred: %u", ev);
+	if(ev == CA_EVENT_CWND_RESTART)
+	{
+		// Something has reset our CWND, possibly CWND validation. For now ignore that and bring the CWND back up
+		struct tcp_sock *tp = tcp_sk(sk);
+		u32 reset_cwnd = tp->snd_cwnd;
+		tp->snd_cwnd = tp->snd_cwnd_clamp; // bounce back the CWND value to the clampped value
+		printk(KERN_INFO "CWND validation attempted to bring cwnd down to: %u. It was bumped back to %u", reset_cwnd, tp->snd_cwnd);
+	}
+	
 }
 
 u32 vreno_undo_cwnd(struct sock *sk) 
