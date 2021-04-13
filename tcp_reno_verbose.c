@@ -3,6 +3,12 @@
 #include <linux/vmalloc.h>
 
 
+struct vrenotcp {
+	u32 saved_snd_cwnd;
+	u32 saved_reset_cnt;
+
+};
+
 
 void tcp_vreno_in_ack_event(struct sock *sk, u32 flags)
 {
@@ -12,12 +18,31 @@ void tcp_vreno_in_ack_event(struct sock *sk, u32 flags)
 	uint16_t sport = ntohs(isock->inet_sport);
 	uint16_t dport = ntohs(isock->inet_dport);
 
-	if(sport == 80 || dport == 80) { // HTTP server doing 
+	if(sport == 80) { // HTTP server doing
 		printk(KERN_INFO "ACK Received. sourcep: %u dstp: %u proto%u send window: %u recv window %u\n",
 				sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd);
+		struct vrenotcp *ca = inet_csk_ca(sk);
+		printk(KERN_INFO "Saved cwnd: %u, current cwnd: %u\n", ca->saved_snd_cwnd, tp->snd_cwnd);
+		ca->saved_snd_cwnd = tp->snd_cwnd;
 	}
 }
 
+static inline void vreno_reset(struct vrenotcp *ca) {
+
+        ca->saved_snd_cwnd = 0;
+        ca->saved_reset_cnt = 0;
+}
+
+
+void tcp_vreno_init(struct sock *sk) {
+
+	struct vrenotcp *ca = inet_csk_ca(sk);
+
+	vreno_reset(ca);
+}
+
+
+/*
 void clamp_init(struct sock *sk)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
@@ -30,7 +55,7 @@ void vreno_set_state(struct sock *sk, u8 new_state)
 	printk(KERN_INFO "Entering new state: %u", new_state);
 
 }
-
+*/
 
 void vreno_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
 {
@@ -42,28 +67,35 @@ void vreno_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
 		struct tcp_sock *tp = tcp_sk(sk);
 		u32 reset_cwnd = tp->snd_cwnd;
 		tp->snd_cwnd = tp->snd_cwnd_clamp; // bounce back the CWND value to the clampped value
-		printk(KERN_INFO "CWND validation attempted to bring cwnd down to: %u. It was bumped back to %u", reset_cwnd, tp->snd_cwnd);
+		printk(KERN_INFO "CWND validation attempted to bring cwnd down to: %u. It was bumped back to %u\n", reset_cwnd, tp->snd_cwnd);
+		struct vrenotcp *ca = inet_csk_ca(sk);
+		ca->saved_reset_cnt = ca->saved_reset_cnt++;
+		printk(KERN_INFO "Reset count: %u\n", ca->saved_reset_cnt);
 	}
-	
+
 }
 
-u32 vreno_undo_cwnd(struct sock *sk) 
+
+/*
+u32 vreno_undo_cwnd(struct sock *sk)
 {
 	u32 new_cwnd = tcp_reno_undo_cwnd(sk);
 	printk(KERN_INFO "Loss occurred, new CWND value is: %u", new_cwnd);
 	return new_cwnd;
 }
+*/
+
 
 struct tcp_congestion_ops tcp_reno_verbose = {
-	.init		= clamp_init,
+	.init		= tcp_vreno_init,
 	.flags		= TCP_CONG_NON_RESTRICTED,
 	.name		= "reno_verbose",
 	.owner		= THIS_MODULE,
 	.ssthresh	= tcp_reno_ssthresh,
 	.cong_avoid	= tcp_reno_cong_avoid,
-	.set_state  = vreno_set_state,
+//	.set_state  = vreno_set_state,
 	.cwnd_event = vreno_cwnd_event,
-	.undo_cwnd	= vreno_undo_cwnd,
+	.undo_cwnd	= tcp_reno_undo_cwnd,
 	.in_ack_event = tcp_vreno_in_ack_event,
 };
 
