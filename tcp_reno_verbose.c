@@ -21,9 +21,9 @@ void tcp_vreno_in_ack_event(struct sock *sk, u32 flags)
 	if(sport == 80) { // HTTP server doing
 		printk(KERN_INFO "ACK Received. sourcep: %u dstp: %u proto%u send window: %u recv window %u\n",
 				sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd);
-		struct vrenotcp *ca = inet_csk_ca(sk);
-		printk(KERN_INFO "Saved cwnd: %u, current cwnd: %u\n", ca->saved_snd_cwnd, tp->snd_cwnd);
-		ca->saved_snd_cwnd = tp->snd_cwnd;
+//		struct vrenotcp *ca = inet_csk_ca(sk);
+//		printk(KERN_INFO "Saved cwnd: %u, current cwnd: %u\n", ca->saved_snd_cwnd, tp->snd_cwnd);
+//		ca->saved_snd_cwnd = tp->snd_cwnd;
 	}
 }
 
@@ -67,7 +67,7 @@ void vreno_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
 		struct tcp_sock *tp = tcp_sk(sk);
 		u32 reset_cwnd = tp->snd_cwnd;
 		tp->snd_cwnd = tp->snd_cwnd_clamp; // bounce back the CWND value to the clampped value
-		printk(KERN_INFO "CWND validation attempted to bring cwnd down to: %u. It was bumped back to %u\n", reset_cwnd, tp->snd_cwnd);
+//		printk(KERN_INFO "CWND validation attempted to bring cwnd down to: %u. It was bumped back to %u\n", reset_cwnd, tp->snd_cwnd);
 		struct vrenotcp *ca = inet_csk_ca(sk);
 		ca->saved_reset_cnt = ca->saved_reset_cnt++;
 		printk(KERN_INFO "Reset count: %u\n", ca->saved_reset_cnt);
@@ -86,6 +86,24 @@ u32 vreno_undo_cwnd(struct sock *sk)
 */
 
 
+void tcp_trace_state(struct sock* sk, u8 new_state)
+{
+	switch(new_state)
+	{
+		case TCP_CA_CWR:
+			printk(KERN_INFO "Trace event: Entering CWR state (ECN mark or qdisc drop)\n");
+			break;
+		case TCP_CA_Recovery:
+			printk(KERN_INFO "Trace event: Loss. Entering fast retransmit state (dup acks)\n");
+			break;
+		case TCP_CA_Loss:
+			printk(KERN_INFO "Trace event: Loss. Entering loss recovery (Timeout)\n");
+			break;
+	}
+
+}
+
+
 struct tcp_congestion_ops tcp_reno_verbose = {
 	.init		= tcp_vreno_init,
 	.flags		= TCP_CONG_NON_RESTRICTED,
@@ -97,6 +115,8 @@ struct tcp_congestion_ops tcp_reno_verbose = {
 	.cwnd_event = vreno_cwnd_event,
 	.undo_cwnd	= tcp_reno_undo_cwnd,
 	.in_ack_event = tcp_vreno_in_ack_event,
+
+	.set_state	= tcp_trace_state,
 };
 
 
