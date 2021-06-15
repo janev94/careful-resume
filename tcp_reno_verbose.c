@@ -19,8 +19,8 @@ void tcp_vreno_in_ack_event(struct sock *sk, u32 flags)
 	uint16_t dport = ntohs(isock->inet_dport);
 
 	if(sport == 80) { // HTTP server doing
-		printk(KERN_INFO "ACK Received. sourcep: %u dstp: %u proto%u send window: %u recv window %u\n",
-				sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd);
+		printk(KERN_INFO "ACK Received. sourcep: %u dstp: %u proto%u send window: %u recv window: %u ssthresh: %u\n",
+				sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd, tp->snd_ssthresh);
 //		struct vrenotcp *ca = inet_csk_ca(sk);
 //		printk(KERN_INFO "Saved cwnd: %u, current cwnd: %u\n", ca->saved_snd_cwnd, tp->snd_cwnd);
 //		ca->saved_snd_cwnd = tp->snd_cwnd;
@@ -99,6 +99,8 @@ void tcp_trace_state(struct sock* sk, u8 new_state)
 		case TCP_CA_Loss:
 			printk(KERN_INFO "Trace event: Loss. Entering loss recovery (Timeout)\n");
 			break;
+		default:
+			printk(KERN_INFO "Trace event: Unknown %u\n", new_state);
 	}
 
 }
