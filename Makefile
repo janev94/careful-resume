@@ -1,4 +1,5 @@
-obj-m += tcp_reno_verbose.o tcp_cubic_verbose.o tcp_bbr_verbose.o
+#obj-m += tcp_reno_verbose.o tcp_cubic_verbose.o tcp_bbr_verbose.o
+obj-m += tcp_reno_verbose.o tcp_cubic_verbose.o
 
 IDIR= /lib/modules/$(shell uname -r)/kernel/net/ipv4/
 KDIR := /lib/modules/$(shell uname -r)/build
