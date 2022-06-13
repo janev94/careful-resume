@@ -1,3 +1,18 @@
+/*
+* Based on TCP Reno (https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp.c). This version of TCP Reno logs to the kern.log whenver IN_ACK_EVENT or congestion window (CWND) related event occurs. 
+*
+* ---------------------------------------------------------------------
+* Copyright (C) 2022 Mihail Yanev
+* This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; version 2.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+* 
+* ---------------------------------------------------------------------
+* New-CWV implementation for Linux: draft-ietf-tcpm-newcwv-05.txt
+*/
+
 #include <linux/module.h>
 #include <net/tcp.h>
 #include <linux/vmalloc.h>
