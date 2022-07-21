@@ -528,7 +528,7 @@ static struct tcp_congestion_ops tcp_cubic_verbose __read_mostly = {
 	.cwnd_event		= vcubic_cwnd_event,
 	.pkts_acked     = bictcp_acked,
 	.owner			= THIS_MODULE,
-	.name			= "cubic_verbose",
+	.name			= "cubic_ss",
 	.in_ack_event = tcp_vcubic_in_ack_event,
 };
 
@@ -565,7 +565,7 @@ static int __init cubictcp_register(void)
 	do_div(cube_factor, bic_scale * 10);
 
 	printk(KERN_INFO "Verbose Cubic Going up2\n");
-	hystart = 1;
+	hystart = 0;
 
 	return tcp_register_congestion_control(&tcp_cubic_verbose);
 }
@@ -581,4 +581,4 @@ module_exit(cubictcp_unregister);
 
 MODULE_AUTHOR("Yanev");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("CUBIC Verbose TCP based on Cubic 2.3");
+MODULE_DESCRIPTION("CUBIC Verbose TCP based on Cubic 2.3. Slow-start is disabled");
