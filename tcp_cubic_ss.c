@@ -100,6 +100,8 @@ struct bictcp {
 	u32	end_seq;	/* end_seq of the round */
 	u32	last_ack;	/* last time when the ACK spacing is close */
 	u32	curr_rtt;	/* the minimum rtt of current round */
+
+	u32 saved_snd_cwnd;
 };
 
 static inline void bictcp_reset(struct bictcp *ca)
@@ -143,6 +145,7 @@ static void bictcp_init(struct sock *sk)
 
 	bictcp_reset(ca);
 
+	printk(KERN_INFO "Hystart enabled: %d", hystart);
 	if (hystart)
 		bictcp_hystart_reset(sk);
 
@@ -456,48 +459,44 @@ static void bictcp_acked(struct sock *sk, const struct ack_sample *sample)
 		hystart_update(sk, delay);
 }
 
-// ********************************** END CUBIC **********************************
 
-struct vcubictcp {
-	u32 saved_snd_cwnd;
-	u32 saved_reset_cnt;
-
-};
+// ================================================================ Modifications
 
 
-void tcp_vcubic_in_ack_event(struct sock *sk, u32 flags)
+
+void vcubic_in_ack_event(struct sock *sk, u32 flags)
 {
 	const struct tcp_sock *tp = tcp_sk(sk);
 	const struct inet_sock *isock = inet_sk(sk);
+	struct bictcp *vc = inet_csk_ca(sk);
 
 	uint16_t sport = ntohs(isock->inet_sport);
 	uint16_t dport = ntohs(isock->inet_dport);
 
 	if(sport == 80) { // HTTP server doing
-		struct vcubictcp *ca = inet_csk_ca(sk);
-		if(ca->saved_snd_cwnd != tp->snd_cwnd)
+		if(vc->saved_snd_cwnd != tp->snd_cwnd)
 		{
 			printk(KERN_INFO "ACK Received. sourcep: %u dstp: %u proto%u send window: %u recv window %u\n",
 					sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd);
-			printk(KERN_INFO "Saved cwnd: %u, current cwnd: %u\n", ca->saved_snd_cwnd, tp->snd_cwnd);
-			ca->saved_snd_cwnd = tp->snd_cwnd;
+			printk(KERN_INFO "Saved cwnd: %u, Current cwnd: %u\n", vc->saved_snd_cwnd, tp->snd_cwnd);
+			vc->saved_snd_cwnd = tp->snd_cwnd;
 		}
 	}
 }
 
-static inline void vcubic_reset(struct vcubictcp *ca) {
-        ca->saved_snd_cwnd = 0;
+
+static inline void vcubic_reset(struct bictcp *vc) {
+		printk(KERN_INFO "Reset occurred");
+        vc->saved_snd_cwnd = 0;
 }
 
+void vcubic_init(struct sock *sk) {
 
-void tcp_vcubic_init(struct sock *sk) {
-
-	struct vcubictcp *ca = inet_csk_ca(sk);
-
-	vcubic_reset(ca);
+	printk(KERN_INFO "Initializing Verbose Cubic connection");
+	struct bictcp *vc = inet_csk_ca(sk);
 	bictcp_init(sk);
+	vc->saved_snd_cwnd = 0;
 }
-
 
 void vcubic_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
 {
@@ -505,7 +504,7 @@ void vcubic_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
 	// printk(KERN_INFO "Congestion window event occurred: %u", ev);
 	if(ev == CA_EVENT_CWND_RESTART)
 	{
-		struct vcubictcp *ca = inet_csk_ca(sk);
+		struct bictcp *vc = inet_csk_ca(sk);
 		const struct tcp_sock *tp = tcp_sk(sk);
 		const struct inet_sock *isock = inet_sk(sk);
 
@@ -519,21 +518,22 @@ void vcubic_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
 }
 
 
-static struct tcp_congestion_ops tcp_cubic_verbose __read_mostly = {
-	.init			= tcp_vcubic_init,
-	.ssthresh		= bictcp_recalc_ssthresh,
-	.cong_avoid		= bictcp_cong_avoid,
-	.set_state		= bictcp_state,
-	.undo_cwnd		= tcp_reno_undo_cwnd,
-	.cwnd_event		= vcubic_cwnd_event,
-	.pkts_acked     = bictcp_acked,
-	.owner			= THIS_MODULE,
-	.name			= "cubic_ss",
-	.in_ack_event = tcp_vcubic_in_ack_event,
+static struct tcp_congestion_ops cubictcp __read_mostly = {
+	.init		= vcubic_init,
+	.ssthresh	= bictcp_recalc_ssthresh,
+	.cong_avoid	= bictcp_cong_avoid,
+	.set_state	= bictcp_state,
+	.undo_cwnd	= tcp_reno_undo_cwnd,
+	.cwnd_event	= vcubic_cwnd_event,
+	.pkts_acked = bictcp_acked,
+	.owner		= THIS_MODULE,
+	.name		= "cubic_ss",
+	.in_ack_event = vcubic_in_ack_event,
 };
 
 static int __init cubictcp_register(void)
 {
+	printk(KERN_INFO "Vcubic aa Going up");
 	BUILD_BUG_ON(sizeof(struct bictcp) > ICSK_CA_PRIV_SIZE);
 
 	/* Precompute a bunch of the scaling factors that are used per-packet
@@ -563,22 +563,22 @@ static int __init cubictcp_register(void)
 
 	/* divide by bic_scale and by constant Srtt (100ms) */
 	do_div(cube_factor, bic_scale * 10);
-
-	printk(KERN_INFO "Verbose Cubic Going up2\n");
 	hystart = 0;
 
-	return tcp_register_congestion_control(&tcp_cubic_verbose);
+	return tcp_register_congestion_control(&cubictcp);
 }
 
 static void __exit cubictcp_unregister(void)
 {
-	printk(KERN_INFO "Verbose Cubic Going down\n");
-	tcp_unregister_congestion_control(&tcp_cubic_verbose);
+	printk(KERN_INFO "Verbose Cubic Going down");
+	tcp_unregister_congestion_control(&cubictcp);
 }
+
 
 module_init(cubictcp_register);
 module_exit(cubictcp_unregister);
 
-MODULE_AUTHOR("Yanev");
+MODULE_AUTHOR("Mihail Yanev");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("CUBIC Verbose TCP based on Cubic 2.3. Slow-start is disabled");
+MODULE_VERSION("1.0");
