@@ -462,7 +462,8 @@ static void bictcp_acked(struct sock *sk, const struct ack_sample *sample)
 
 // ================================================================ Modifications
 
-
+static int IW=10;
+module_param(IW, int, 0644);
 
 void vcubic_in_ack_event(struct sock *sk, u32 flags)
 {
@@ -492,10 +493,12 @@ static inline void vcubic_reset(struct bictcp *vc) {
 
 void vcubic_init(struct sock *sk) {
 
-	printk(KERN_INFO "Initializing Verbose Cubic connection");
+	printk(KERN_INFO "Initializing Verbose Cubic connection, IW value is: %d", IW);
 	struct bictcp *vc = inet_csk_ca(sk);
+	struct tcp_sock *tp = tcp_sk(sk);
 	bictcp_init(sk);
 	vc->saved_snd_cwnd = 0;
+	tp->snd_cwnd = IW;
 }
 
 void vcubic_cwnd_event(struct sock *sk, enum tcp_ca_event ev)
