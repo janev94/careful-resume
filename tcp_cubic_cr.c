@@ -102,6 +102,7 @@ struct bictcp {
 	u32	curr_rtt;	/* the minimum rtt of current round */
 
 	u32 saved_snd_cwnd;
+	u32 acks_recvd;
 };
 
 static inline void bictcp_reset(struct bictcp *ca)
@@ -473,6 +474,8 @@ void vcubic_in_ack_event(struct sock *sk, u32 flags)
 
 	uint16_t sport = ntohs(isock->inet_sport);
 	uint16_t dport = ntohs(isock->inet_dport);
+	vc->acks_recvd++;
+	printk(KERN_INFO "ACK Received. acks_recvd: %u", vc->acks_recvd);
 
 	if(sport == 80) { // HTTP server doing
 		if(vc->saved_snd_cwnd != tp->snd_cwnd)
@@ -498,6 +501,7 @@ void vcubic_init(struct sock *sk) {
 	struct tcp_sock *tp = tcp_sk(sk);
 	bictcp_init(sk);
 	vc->saved_snd_cwnd = 0;
+	vc->acks_recvd = 0;
 	tp->snd_cwnd = IW;
 }
 
