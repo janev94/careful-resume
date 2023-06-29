@@ -581,7 +581,6 @@ static int __init cubictcp_register(void)
 
 	/* divide by bic_scale and by constant Srtt (100ms) */
 	do_div(cube_factor, bic_scale * 10);
-	hystart = 1;
 
 	return tcp_register_congestion_control(&cubictcp);
 }
