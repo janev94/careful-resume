@@ -8,10 +8,10 @@ all:
 	make -C $(KDIR) M=$(PWD) modules
 
 install_cubic_cr:
-	@echo "Using IW value of $(IW)"
+	@echo "Using IW value of $(IW) USE_JUMP ${USE_JUMP} JUMP ${JUMP}"
 	install -v -m 644 tcp_cubic_cr.ko $(IDIR)
 	depmod
-	modprobe tcp_cubic_cr IW=$(IW)
+	modprobe tcp_cubic_cr IW=$(IW) USE_JUMP=${USE_JUMP} JUMP=${JUMP}
 	sysctl -w net.ipv4.tcp_allowed_congestion_control="$(shell sysctl net.ipv4.tcp_allowed_congestion_control -n) cubic_cr"
 
 clean:

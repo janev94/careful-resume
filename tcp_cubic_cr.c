@@ -469,6 +469,9 @@ module_param(IW, int, 0644);
 static int JUMP=60;
 module_param(JUMP, int, 0644);
 
+static int USE_JUMP=0;
+module_param(USE_JUMP, int, 0644);
+
 void vcubic_in_ack_event(struct sock *sk, u32 flags)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
@@ -479,7 +482,7 @@ void vcubic_in_ack_event(struct sock *sk, u32 flags)
 	uint16_t dport = ntohs(isock->inet_dport);
 	vc->acks_recvd++;
 	printk(KERN_INFO "ACK Received. acks_recvd: %u", vc->acks_recvd);
-	if (vc->acks_recvd == IW)
+	if (USE_JUMP && vc->acks_recvd == IW)
 	{
 		printk(KERN_INFO "Received %u ACKs. Jumping window to %u", vc->acks_recvd, JUMP);
 		tp->snd_cwnd = JUMP;
@@ -488,8 +491,8 @@ void vcubic_in_ack_event(struct sock *sk, u32 flags)
 	if(sport == 80) { // HTTP server doing
 		if(vc->saved_snd_cwnd != tp->snd_cwnd)
 		{
-			printk(KERN_INFO "ACK Received. sourcep: %u dstp: %u proto%u send window: %u recv window %u\n",
-					sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd);
+			printk(KERN_INFO "ACK Received. sourcep: %u dstp: %u proto%u send window: %u recv window %u ssthresh: %u\n\n",
+					sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd, tp->snd_ssthresh);
 			printk(KERN_INFO "Saved cwnd: %u, Current cwnd: %u\n", vc->saved_snd_cwnd, tp->snd_cwnd);
 			vc->saved_snd_cwnd = tp->snd_cwnd;
 		}
@@ -504,7 +507,7 @@ static inline void vcubic_reset(struct bictcp *vc) {
 
 void vcubic_init(struct sock *sk) {
 
-	printk(KERN_INFO "Initializing Verbose Cubic connection, IW value is: %d JUMP is: %d", IW, JUMP);
+	printk(KERN_INFO "Initializing Verbose Cubic connection, IW value is: %d USE_JUMP: %d JUMP is: %d", IW, USE_JUMP, JUMP);
 	struct bictcp *vc = inet_csk_ca(sk);
 	struct tcp_sock *tp = tcp_sk(sk);
 	bictcp_init(sk);
