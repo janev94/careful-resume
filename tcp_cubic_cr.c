@@ -507,7 +507,7 @@ static inline void vcubic_reset(struct bictcp *vc) {
 
 void vcubic_init(struct sock *sk) {
 
-	printk(KERN_INFO "Initializing Verbose Cubic connection, IW value is: %d USE_JUMP: %d JUMP is: %d", IW, USE_JUMP, JUMP);
+	printk(KERN_INFO "Initializing Verbose Cubic connection, IW value is: %d USE_JUMP: %d JUMP is: %d USE_HYSTART: %d", IW, USE_JUMP, JUMP, hystart);
 	struct bictcp *vc = inet_csk_ca(sk);
 	struct tcp_sock *tp = tcp_sk(sk);
 	bictcp_init(sk);
