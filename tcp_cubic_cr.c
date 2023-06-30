@@ -378,6 +378,21 @@ static void bictcp_state(struct sock *sk, u8 new_state)
 		bictcp_reset(inet_csk_ca(sk));
 		bictcp_hystart_reset(sk);
 	}
+
+	switch(new_state)
+	{
+		case TCP_CA_CWR:
+			printk(KERN_INFO "Trace event: Entering CWR state (ECN mark or qdisc drop)\n");
+			break;
+		case TCP_CA_Recovery:
+			printk(KERN_INFO "Trace event: Loss. Entering fast retransmit state (dup acks)\n");
+			break;
+		case TCP_CA_Loss:
+			printk(KERN_INFO "Trace event: Loss. Entering loss recovery (Timeout)\n");
+			break;
+		default:
+			printk(KERN_INFO "Trace event: Unknown %u\n", new_state);
+	}
 }
 
 static void hystart_update(struct sock *sk, u32 delay)
