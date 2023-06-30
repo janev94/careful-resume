@@ -506,7 +506,7 @@ static inline void vcubic_reset(struct bictcp *vc) {
 
 void vcubic_init(struct sock *sk) {
 
-	printk(KERN_INFO "Initializing Verbose Cubic connection, IW value is: %d USE_JUMP: %d JUMP is: %d USE_HYSTART: %d", IW, USE_JUMP, JUMP, hystart);
+	printk(KERN_INFO "Initializing Cubic CR connection, IW value is: %d USE_JUMP: %d JUMP is: %d USE_HYSTART: %d", IW, USE_JUMP, JUMP, hystart);
 	struct bictcp *vc = inet_csk_ca(sk);
 	struct tcp_sock *tp = tcp_sk(sk);
 	bictcp_init(sk);
@@ -550,7 +550,7 @@ static struct tcp_congestion_ops cubictcp __read_mostly = {
 
 static int __init cubictcp_register(void)
 {
-	printk(KERN_INFO "Vcubic Going up");
+	printk(KERN_INFO "Cubic CR Going up");
 	BUILD_BUG_ON(sizeof(struct bictcp) > ICSK_CA_PRIV_SIZE);
 
 	/* Precompute a bunch of the scaling factors that are used per-packet
@@ -586,7 +586,7 @@ static int __init cubictcp_register(void)
 
 static void __exit cubictcp_unregister(void)
 {
-	printk(KERN_INFO "Verbose Cubic Going down");
+	printk(KERN_INFO "Cubic CR Going down");
 	tcp_unregister_congestion_control(&cubictcp);
 }
 
@@ -596,5 +596,5 @@ module_exit(cubictcp_unregister);
 
 MODULE_AUTHOR("Mihail Yanev");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Verbose CUBIC TCP");
+MODULE_DESCRIPTION("CUBIC TCP CR_PROTOTYPE");
 MODULE_VERSION("1.0");
