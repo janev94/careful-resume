@@ -481,7 +481,6 @@ void vcubic_in_ack_event(struct sock *sk, u32 flags)
 	uint16_t sport = ntohs(isock->inet_sport);
 	uint16_t dport = ntohs(isock->inet_dport);
 	vc->acks_recvd++;
-	printk(KERN_INFO "ACK Received. acks_recvd: %u", vc->acks_recvd);
 	if (USE_JUMP && vc->acks_recvd == IW)
 	{
 		printk(KERN_INFO "Received %u ACKs. Jumping window to %u", vc->acks_recvd, JUMP);
@@ -491,8 +490,8 @@ void vcubic_in_ack_event(struct sock *sk, u32 flags)
 	if(sport == 80) { // HTTP server doing
 		if(vc->saved_snd_cwnd != tp->snd_cwnd)
 		{
-			printk(KERN_INFO "ACK Received. sourcep: %u dstp: %u proto%u send window: %u recv window %u ssthresh: %u\n\n",
-					sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd, tp->snd_ssthresh);
+			printk(KERN_INFO "ACK Received. ACK Count %u sourcep: %u dstp: %u proto%u send window: %u recv window %u ssthresh: %u in_slow_start: %d\n\n",
+					vc->acks_recvd, sport, dport, sk->sk_protocol, tp->snd_cwnd, tp->rcv_wnd, tp->snd_ssthresh, tcp_in_slow_start(tp));
 			printk(KERN_INFO "Saved cwnd: %u, Current cwnd: %u\n", vc->saved_snd_cwnd, tp->snd_cwnd);
 			vc->saved_snd_cwnd = tp->snd_cwnd;
 		}
